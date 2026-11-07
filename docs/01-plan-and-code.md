@@ -32,6 +32,16 @@ A teammate reads the change and leaves comments. Fix them with more commits on t
 
 Merging into `main` starts the `Pipeline` workflow ([07](07-deploy.md)).
 
+## Make a red check block the merge
+
+Out of the box, a failing check only warns you; GitHub still lets you merge. To make it a hard rule:
+**Settings → Rules → Rulesets → New ruleset → New branch ruleset**. Name it `protect main`, set **Enforcement status**
+to **Active**, add the target **Include default branch**, tick **Require status checks to pass**, and add the three
+checks: **Lint and unit tests**, **Quality gate (SonarQube)** and **Docker image builds and starts**. Save.
+
+From then on, a change can only reach `main` through a pull request whose checks are green. Pushing straight to
+`main` is refused.
+
 ## Update your local copy
 
 ```bash
