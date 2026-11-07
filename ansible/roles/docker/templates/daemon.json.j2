@@ -1,4 +1,6 @@
 {
   "log-opts": { "max-size": "10m", "max-file": "3" },
+  "dns": {{ docker_dns | to_json }},
+  "dns-opts": {{ docker_dns_opts | to_json }},
   "insecure-registries": {{ insecure_registries | to_json }}
 }

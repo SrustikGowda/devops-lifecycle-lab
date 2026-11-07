@@ -102,11 +102,14 @@ Lima needs QEMU on Linux (macOS uses its built-in virtualization). Install it, f
 
 ## The board on staging or production says DELAYED or PROBLEM, but the sites are fine
 
-The servers can't look up names quickly. A common cause: you switched networks or turned a VPN on or off after the
-servers started, and the VMs kept the old network's state (we measured 4-second name lookups). Restart the servers:
+The servers are slow to look up names. On a Mac, Lima's built-in DNS answers IPv6 lookups slowly and its network can
+drop one of two lookups sent at the same moment, so every check waited 2 to 5 seconds. The deploy now gives the app's
+containers public DNS (1.1.1.1 and 8.8.8.8) and makes them ask one question at a time
+(`ansible/roles/docker/defaults/main.yml`). Deploy again and the board should say ON TIME.
+
+If your network blocks public DNS, set `docker_dns: []` in that file to use the server's own DNS. If you switched
+networks or a VPN on or off after the servers started, also restart them:
 
 ```bash
 bash servers/down.sh && bash servers/up.sh
 ```
-
-The app containers start again by themselves. Refresh http://localhost:8081 and http://localhost:8082.

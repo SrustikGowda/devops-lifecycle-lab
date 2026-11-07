@@ -3,3 +3,11 @@
 #   -e '{"insecure_registries": ["host.lima.internal:5001"]}'
 # The real pipeline pulls from ghcr.io over HTTPS and leaves this empty.
 insecure_registries: []
+
+# Name servers for the app's containers, and how they ask.
+# Lima's built-in DNS on a Mac answers IPv6 (AAAA) lookups slowly (we measured 2-4 s), and its network drops one of two
+# lookups sent at the same moment. The app checks websites, so every check got slow and the board said DELAYED.
+# Public DNS plus "one lookup at a time" (single-request-reopen) brought lookups to about 0.1 s.
+# On a network that blocks public DNS, set docker_dns: [] to go back to the server's own DNS.
+docker_dns: ["1.1.1.1", "8.8.8.8"]
+docker_dns_opts: ["single-request-reopen"]
