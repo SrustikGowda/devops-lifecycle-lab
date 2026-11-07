@@ -99,3 +99,14 @@ with the value `true`. Do it after the `staging` and `production` environments e
 
 Lima needs QEMU on Linux (macOS uses its built-in virtualization). Install it, for example on Ubuntu:
 `sudo apt install qemu-system qemu-utils`, then run `bash servers/up.sh` again.
+
+## The board on staging or production says DELAYED or PROBLEM, but the sites are fine
+
+The servers can't look up names quickly. A common cause: you switched networks or turned a VPN on or off after the
+servers started, and the VMs kept the old network's state (we measured 4-second name lookups). Restart the servers:
+
+```bash
+bash servers/down.sh && bash servers/up.sh
+```
+
+The app containers start again by themselves. Refresh http://localhost:8081 and http://localhost:8082.
