@@ -42,8 +42,9 @@ Details: [docs/05-servers.md](docs/05-servers.md) and [docs/03-quality-gate.md](
    public repo). Don't fork: a fork's pull requests would go to this repo, not yours.
 2. Your new repo runs the Pipeline once straight away. It tests the code and pushes the image to ghcr.io, and the deploy
    jobs are skipped: they stay off until step 6.
-3. Make the image public: your profile, **Packages**, `devops-lifecycle-lab`, **Package settings**, **Change visibility**,
-   **Public**. Your servers download it without a password.
+3. Check the image is public: your profile, **Packages**, `devops-lifecycle-lab`. A public repo's package is normally
+   public already; if it says Private, open **Package settings → Change visibility → Public**. Your servers download it
+   without a password.
 4. Create two environments (**Settings → Environments**): `staging` with no rules, and `production` with
    **Required reviewers** (add yourself). On both, set **Deployment branches** to `main` only.
 5. Run `bash servers/up.sh`, then attach your laptop as a runner with the label `lab`:

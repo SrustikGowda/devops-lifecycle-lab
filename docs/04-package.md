@@ -28,7 +28,7 @@ With the SHA, you always know which code is running, and you can go back to any 
 
 `ghcr.io` is GitHub's container registry. The workflow logs in with the built-in `GITHUB_TOKEN`, so you create no secret. Registry names must be lowercase; the workflow lowercases your repo name.
 
-**Note (not yet tested end to end):** if the servers cannot pull the image, make the package public: Your profile, Packages, devops-lifecycle-lab, Package settings, Change visibility, Public. The servers pull without logging in.
+**Note:** when your repo is public, GitHub makes the package public too, so your servers can download it without a password (that is what happened on our first run). If a deploy says it could not download the image, check: your profile, Packages, devops-lifecycle-lab, Package settings, Change visibility, Public.
 
 ## Multi-arch
 

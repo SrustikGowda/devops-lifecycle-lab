@@ -76,7 +76,7 @@ This was the server's first deploy, so there was nothing to roll back to. Fix th
 
 ## The server cannot pull the image from ghcr.io (GitHub path)
 
-Not yet tested end to end. The servers pull without logging in, so the package must be public: Your profile, Packages, devops-lifecycle-lab, Package settings, Change visibility, Public. Also check the image name is all lowercase.
+The servers download the image without logging in, so the package must be public. A public repo's package is normally public already. If not: Your profile, Packages, devops-lifecycle-lab, Package settings, Change visibility, Public. Then run the deploy again.
 
 ## The production job never starts (GitHub path)
 
