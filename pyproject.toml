@@ -1,0 +1,19 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+# Plain `pytest` also measures coverage of the app package and writes coverage.xml.
+addopts = "--cov --cov-report=term-missing --cov-report=xml:coverage.xml"
+
+[tool.coverage.run]
+source_pkgs = ["app"]
+branch = true
+relative_files = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+# E/W: pycodestyle, F: pyflakes, I: import order, B: bugbear, UP: modern syntax, SIM: simplify
+select = ["E", "W", "F", "I", "B", "UP", "SIM"]

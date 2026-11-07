@@ -1,0 +1,21 @@
+# SonarQube Community Build on your laptop: http://localhost:9000 (first login admin / admin, it asks you to change it).
+# Start:  docker compose -f sonarqube/compose.yml up -d
+# Stop:   docker compose -f sonarqube/compose.yml down        (add -v to delete its data)
+services:
+  sonarqube:
+    image: sonarqube:community
+    container_name: lab-sonarqube
+    ports:
+      - "9000:9000"
+    environment:
+      # A laptop-sized setup: skip Elasticsearch's production kernel checks.
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+
+volumes:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:

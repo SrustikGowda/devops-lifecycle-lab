@@ -1,0 +1,28 @@
+# Deploy the Status Board container to staging or production.
+#
+#   ansible-playbook -i ansible/inventory.ini ansible/deploy.yml -l staging \
+#     -e app_image=ghcr.io/<owner>/devops-lifecycle-lab:<sha> -e app_version=<text>
+#
+# Ends with "DEPLOYED <version> to <host>", or fails with "ROLLED BACK <host> to <previous image>".
+
+- name: Deploy the Status Board
+  hosts: all
+  become: true
+  gather_facts: false
+
+  pre_tasks:
+    - name: Check the inputs
+      ansible.builtin.assert:
+        that:
+          - ansible_limit is defined
+          - app_image is defined and app_image | length > 0
+          - app_version is defined and app_version | length > 0
+          - insecure_registries is not defined or (insecure_registries is sequence and insecure_registries is not string)
+        fail_msg: >-
+          Pick the servers with -l staging or -l production, and pass -e app_image=<image> -e app_version=<text>.
+          insecure_registries, if used, must be a list, e.g. -e '{"insecure_registries": ["host.lima.internal:5001"]}'.
+        quiet: true
+
+  roles:
+    - docker
+    - app

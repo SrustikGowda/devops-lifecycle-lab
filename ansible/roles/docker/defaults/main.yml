@@ -1,0 +1,5 @@
+# Registries Docker may pull from over plain HTTP (no TLS).
+# ONLY for local testing with the throwaway registry from servers/dev-registry.sh, e.g.:
+#   -e '{"insecure_registries": ["host.lima.internal:5001"]}'
+# The real pipeline pulls from ghcr.io over HTTPS and leaves this empty.
+insecure_registries: []

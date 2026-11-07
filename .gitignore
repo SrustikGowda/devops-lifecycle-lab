@@ -1,0 +1,22 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Test and analysis output
+.coverage
+coverage.xml
+.scannerwork/
+
+# Local files
+.env
+.DS_Store
+
+# Ansible
+ansible/.venv/
+ansible/collections/
+
+# Build contract (internal)
+CONTRACT.md

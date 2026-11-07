@@ -1,0 +1,40 @@
+# Attach your laptop as a runner (the Jenkins "agent" idea)
+
+GitHub's own machines run the checks and build the image. They can't reach the servers on your laptop, the same way a
+cloud service can't reach a company's private network. So the deploy jobs run on a machine *inside* that network: a
+**self-hosted runner**. In Jenkins words, GitHub is the controller and this runner is an agent (a "node").
+
+## Before you attach it: one security rule
+
+A self-hosted runner runs whatever a workflow tells it to. On a public repo, that could be code from a stranger's pull
+request. This repo is set up so that can't happen:
+
+- `ci.yml` (what pull requests run) only uses `runs-on: ubuntu-latest`, GitHub's machines.
+- Only `pipeline.yml` uses `runs-on: [self-hosted, lab]`, and it only runs for commits on `main`.
+- In your fork, also turn on: **Settings → Actions → General → Fork pull request workflows → Require approval for all
+  external contributors**.
+
+Never change a pull-request workflow to `self-hosted` on a public repo.
+
+## Attach it (about 3 minutes)
+
+1. In your fork: **Settings → Actions → Runners → New self-hosted runner**, pick your OS and architecture.
+2. Run the download commands GitHub shows you, in a folder outside this repo, e.g. `~/actions-runner`.
+3. Configure it with the label `lab` (the token on that page is valid for one hour):
+   ```
+   ./config.sh --url https://github.com/<you>/devops-lifecycle-lab --token <TOKEN> --labels lab --name my-laptop --unattended
+   ```
+4. Start it: `./run.sh`. Back on the Runners page it shows **Idle**: it's attached and waiting for work.
+
+The runner needs: the Lima servers running (`bash servers/up.sh`), `python3.12` (Homebrew: `brew install python@3.12`),
+and `curl`. `runner/deploy.sh` sets up Ansible for it on the first run.
+
+## Environments (the approval button)
+
+In your fork: **Settings → Environments**:
+- `staging`: no rules. Deploys right after the image is pushed.
+- `production`: tick **Required reviewers** and add yourself. The production job waits until you press **Approve**.
+
+## Remove it
+
+`./config.sh remove --token <TOKEN>` (Settings → Actions → Runners → the runner → Remove shows the token).

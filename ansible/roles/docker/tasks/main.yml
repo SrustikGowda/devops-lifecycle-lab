@@ -1,0 +1,27 @@
+# Install Docker Engine on the server. Only the first run does real work; later runs just check.
+
+- name: Install Docker
+  ansible.builtin.apt:
+    name:
+      - docker.io          # Docker Engine from Ubuntu
+      - python3-requests   # needed by Ansible's community.docker modules
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+    lock_timeout: 300      # a fresh VM may still be running its own apt updates
+
+- name: Configure Docker
+  ansible.builtin.template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+    mode: "0644"
+  notify: Restart Docker
+
+- name: Start Docker
+  ansible.builtin.systemd_service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Apply the Docker config now
+  ansible.builtin.meta: flush_handlers

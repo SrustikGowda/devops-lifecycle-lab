@@ -1,0 +1,6 @@
+app_container: status-board        # container name on the server
+app_container_port: 8080            # the port the app listens on inside the container
+app_rollback_image: status-board:rollback   # local copy of the previous image, kept for rollback
+app_health_url: "http://127.0.0.1:{{ app_port }}/health"
+app_health_retries: 15              # 15 tries, 2 seconds apart: about 30 seconds
+app_health_delay: 2

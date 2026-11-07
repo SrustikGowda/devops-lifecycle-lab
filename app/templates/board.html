@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Status Board</title>
+  <style>
+    body { margin: 0; padding: 48px; background: #000; color: #fff;
+           font-family: system-ui, sans-serif; font-size: 36px; }
+    header { display: flex; justify-content: space-between; align-items: baseline;
+             flex-wrap: wrap; gap: 16px; border-bottom: 4px solid #fff; padding-bottom: 24px; }
+    h1 { margin: 0; font-size: 72px; }
+    .version { font-family: ui-monospace, monospace; font-size: 40px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 32px; }
+    th { text-align: left; font-size: 24px; color: #aaa; text-transform: uppercase;
+         letter-spacing: 2px; padding-bottom: 8px; }
+    td { padding: 24px 0; border-bottom: 2px solid #444; }
+    .status { text-align: right; }
+    .badge { display: inline-block; padding: 8px 32px; border-radius: 12px;
+             font-weight: 700; color: #000; }
+    .on-time { background: #00e676; }
+    .delayed { background: #ffd600; }
+    .problem { background: #ff5252; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Status Board</h1>
+    <div class="version">version {{ version }} &middot; commit {{ commit }}</div>
+  </header>
+  <table>
+    <thead>
+      <tr><th>Site</th><th class="status">Status</th></tr>
+    </thead>
+    {% for site in sites %}
+    <tr>
+      <td>{{ site.url }}</td>
+      <td class="status">
+        <span class="badge {{ site.status | lower | replace(' ', '-') }}">{{ site.status }}</span>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</body>
+</html>

@@ -1,0 +1,4 @@
+# actionlint (a linter for workflow files) needs to know our self-hosted runner's custom label.
+self-hosted-runner:
+  labels:
+    - lab

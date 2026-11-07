@@ -1,0 +1,29 @@
+# Lima template for the STAGING server (VM name: lab-staging).
+# A plain Ubuntu 24.04 LTS machine. Ansible installs Docker on it later.
+
+base:
+- template:_images/ubuntu-24.04   # Ubuntu 24.04 LTS cloud image, shipped with Lima
+
+cpus: 2
+memory: 2GiB
+disk: 10GiB
+
+# A server does not need your Mac's files: no shared folders.
+mounts: []
+
+# We install Docker ourselves (with Ansible), so skip Lima's built-in containerd.
+containerd:
+  system: false
+  user: false
+
+# Only the app port reaches the Mac: guest 8081 -> http://localhost:8081.
+# Rules are checked top to bottom; the last rule stops every other port from being forwarded.
+# (guestIP 0.0.0.0 makes the "ignore" rule match ports on every address. Without it, Lima only
+#  ignores ports bound to 127.0.0.1 and would still forward e.g. Docker's 0.0.0.0:<port> to the Mac.)
+portForwards:
+- guestPort: 8081
+  hostPort: 8081
+- guestIP: 0.0.0.0
+  guestPortRange: [1, 65535]
+  proto: any
+  ignore: true

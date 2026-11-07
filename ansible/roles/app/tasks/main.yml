@@ -1,0 +1,113 @@
+# Replace the app container with app_image. If the new one is not healthy, put the old one back.
+
+- name: Check what is running now
+  community.docker.docker_container_info:
+    name: "{{ app_container }}"
+  register: current
+
+- name: Remember the running version
+  ansible.builtin.set_fact:
+    previous_image: "{{ current.container.Config.Image if current.exists else '' }}"
+    previous_version: "{{ (current.container.Config.Labels or {}).get('lab.app.version', 'unknown') if current.exists else '' }}"
+
+# Tags like :main can move when we pull, so keep the running image under its own name.
+- name: Keep a copy for rollback
+  community.docker.docker_image_tag:
+    name: "{{ current.container.Image }}"   # the exact image ID that is running
+    repository:
+      - "{{ app_rollback_image }}"
+  when: current.exists
+
+- name: Download the new image
+  community.docker.docker_image_pull:
+    name: "{{ app_image }}"
+
+- name: Start the new version
+  block:
+    - name: Start the new container
+      community.docker.docker_container:
+        name: "{{ app_container }}"
+        image: "{{ app_image }}"
+        pull: never                 # downloaded in the step above
+        state: started
+        restart_policy: unless-stopped
+        published_ports:
+          - "{{ app_port }}:{{ app_container_port }}"
+        labels:
+          lab.app.version: "{{ app_version }}"
+
+    - name: Wait for /health
+      ansible.builtin.uri:
+        url: "{{ app_health_url }}"
+      register: health
+      until: health.status == 200
+      retries: "{{ app_health_retries }}"
+      delay: "{{ app_health_delay }}"
+
+  rescue:
+    - name: Read the new container's logs
+      ansible.builtin.command: docker logs --tail 20 {{ app_container }}
+      register: failed_logs
+      changed_when: false
+      failed_when: false
+
+    - name: Show the new container's logs
+      ansible.builtin.debug:
+        msg: "{{ failed_logs.stdout_lines + failed_logs.stderr_lines }}"
+
+    - name: Remove the unhealthy container
+      community.docker.docker_container:
+        name: "{{ app_container }}"
+        state: absent
+      when: previous_image == ''
+
+    - name: Stop if there is nothing to roll back to
+      ansible.builtin.fail:
+        msg: "DEPLOY FAILED on {{ inventory_hostname }} - {{ app_image }} is not healthy and there is no previous version to roll back to. Nothing is running now."
+      when: previous_image == ''
+
+    - name: Restore the previous image
+      community.docker.docker_image_tag:
+        name: "{{ app_rollback_image }}"
+        repository:
+          - "{{ previous_image }}"
+
+    - name: Start the previous container
+      community.docker.docker_container:
+        name: "{{ app_container }}"
+        image: "{{ previous_image }}"
+        pull: never
+        state: started
+        restart_policy: unless-stopped
+        published_ports:
+          - "{{ app_port }}:{{ app_container_port }}"
+        labels:
+          lab.app.version: "{{ previous_version }}"
+
+    - name: Wait for /health again
+      ansible.builtin.uri:
+        url: "{{ app_health_url }}"
+      register: rollback_health
+      until: rollback_health.status == 200
+      retries: "{{ app_health_retries }}"
+      delay: "{{ app_health_delay }}"
+      failed_when: false
+
+    - name: Stop if the rollback is not healthy either
+      ansible.builtin.fail:
+        msg: "ROLLBACK FAILED on {{ inventory_hostname }} - {{ previous_image }} is not healthy either."
+      when: rollback_health.status != 200
+
+    - name: Report the rollback
+      ansible.builtin.fail:
+        msg: "ROLLED BACK {{ inventory_hostname }} to {{ previous_image }}"
+
+- name: Remove unused image layers
+  community.docker.docker_prune:
+    images: true
+    images_filters:
+      dangling: true
+
+- name: Report the deploy
+  ansible.builtin.debug:
+    msg: "DEPLOYED {{ app_version }} to {{ inventory_hostname }}"

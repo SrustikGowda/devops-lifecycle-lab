@@ -1,0 +1,5 @@
+# Ansible collections used by deploy.yml.
+# Install (from the repo root):  ansible-galaxy collection install -r ansible/requirements.yml -p ansible/collections
+collections:
+  - name: community.docker
+    version: "5.4.0"
