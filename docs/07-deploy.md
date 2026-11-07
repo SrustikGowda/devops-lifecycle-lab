@@ -63,3 +63,10 @@ ROLLED BACK lab-staging to <previous image>
 A few `FAILED - RETRYING: Wait for /health` lines before success are normal.
 
 A full `YES=1 bash scripts/local-pipeline.sh` run took 85 seconds with SonarQube and 13 seconds with `SKIP_SONAR=1`, for a release.
+
+## Our first real run on GitHub (7 Nov 2026)
+
+Release 1.1.0, merged from a pull request: lint and tests 13 s, image smoke test 13 s, SonarQube gate 111 s, image
+build and push for Intel and ARM 95 s, staging 110 s, then the run waited for **Approve**, and production took 81 s.
+The first deploy on each server is the slowest (it sets up Ansible on the runner and Docker's settings on the server);
+later ones take seconds.
