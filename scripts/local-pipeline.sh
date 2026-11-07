@@ -18,6 +18,10 @@ commit="$(git rev-parse HEAD 2>/dev/null || echo local)"
 image="localhost:5001/devops-lifecycle-lab:${commit}"
 server_image="host.lima.internal:5001/devops-lifecycle-lab:${commit}"   # same image, as the servers see it
 
+if [ ! -f .venv/bin/activate ]; then
+  echo "No .venv yet. Create it first:  python3.12 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt" >&2
+  exit 1
+fi
 # shellcheck disable=SC1091
 source .venv/bin/activate
 

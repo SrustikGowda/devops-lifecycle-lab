@@ -27,6 +27,12 @@ done
 curl -fsS "$HOST/api/system/status" | grep -q '"status":"UP"' || { log "SonarQube did not come up"; exit 1; }
 log "SonarQube is up."
 
+if ! api "$HOST/api/authentication/validate" | grep -q '"valid":true'; then
+  log "SonarQube rejected the login ${ADMIN%%:*}. If you changed the admin password in the web page, run:"
+  log "  export SONAR_ADMIN='admin:<your new password>'"
+  exit 1
+fi
+
 if ! api "$HOST/api/qualitygates/list" | grep -q "\"name\":\"$GATE\""; then
   api -X POST "$HOST/api/qualitygates/create" --data-urlencode "name=$GATE" >/dev/null
   # New gates come with SonarQube's default "new code" conditions; keep this gate to one rule you can see and test.

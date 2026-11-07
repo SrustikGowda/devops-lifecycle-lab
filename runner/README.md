@@ -10,15 +10,16 @@ A self-hosted runner runs whatever a workflow tells it to. On a public repo, tha
 request. This repo is set up so that can't happen:
 
 - `ci.yml` (what pull requests run) only uses `runs-on: ubuntu-latest`, GitHub's machines.
-- Only `pipeline.yml` uses `runs-on: [self-hosted, lab]`, and it only runs for commits on `main`.
-- In your fork, also turn on: **Settings → Actions → General → Fork pull request workflows → Require approval for all
+- Only `pipeline.yml` uses `runs-on: [self-hosted, lab]`, and its deploy jobs only run for `main`, and only after you
+  set the repository variable `LAB_DEPLOY` to `true` (see "Turn deploys on" below).
+- In your repo, also turn on: **Settings → Actions → General → Fork pull request workflows → Require approval for all
   external contributors**.
 
 Never change a pull-request workflow to `self-hosted` on a public repo.
 
 ## Attach it (about 3 minutes)
 
-1. In your fork: **Settings → Actions → Runners → New self-hosted runner**, pick your OS and architecture.
+1. In your repo: **Settings → Actions → Runners → New self-hosted runner**, pick your OS and architecture.
 2. Run the download commands GitHub shows you, in a folder outside this repo, e.g. `~/actions-runner`.
 3. Configure it with the label `lab` (the token on that page is valid for one hour):
    ```
@@ -31,9 +32,18 @@ and `curl`. `runner/deploy.sh` sets up Ansible for it on the first run.
 
 ## Environments (the approval button)
 
-In your fork: **Settings → Environments**:
-- `staging`: no rules. Deploys right after the image is pushed.
+Do this before you turn deploys on. In your repo: **Settings → Environments**:
+- `staging`: no reviewers. Deploys right after the image is pushed.
 - `production`: tick **Required reviewers** and add yourself. The production job waits until you press **Approve**.
+- On both, set **Deployment branches and tags** to the `main` branch only.
+
+Required reviewers need a **public** repo on GitHub's free plan. If you make your copy private, production would deploy
+without asking.
+
+## Turn deploys on
+
+**Settings → Secrets and variables → Actions → Variables → New repository variable**: name `LAB_DEPLOY`, value `true`.
+Until then the Pipeline still tests and builds, and skips the two deploy jobs.
 
 ## Remove it
 

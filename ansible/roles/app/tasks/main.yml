@@ -19,8 +19,17 @@
   when: current.exists
 
 - name: Download the new image
-  community.docker.docker_image_pull:
-    name: "{{ app_image }}"
+  block:
+    - name: Download the new image
+      community.docker.docker_image_pull:
+        name: "{{ app_image }}"
+  rescue:
+    - name: Explain why the download failed
+      ansible.builtin.fail:
+        msg: >-
+          Could not download {{ app_image }} on {{ inventory_hostname }}. Nothing was changed. If it is on ghcr.io,
+          make the package public (your profile, Packages, the package, Package settings, Change visibility, Public),
+          then run the deploy again. Docker said: {{ ansible_failed_result.msg | default('no details') }}
 
 - name: Start the new version
   block:
@@ -91,12 +100,12 @@
       until: rollback_health.status == 200
       retries: "{{ app_health_retries }}"
       delay: "{{ app_health_delay }}"
-      failed_when: false
+      ignore_errors: true           # keep going, so the next task can say clearly what happened
 
     - name: Stop if the rollback is not healthy either
       ansible.builtin.fail:
         msg: "ROLLBACK FAILED on {{ inventory_hostname }} - {{ previous_image }} is not healthy either."
-      when: rollback_health.status != 200
+      when: rollback_health is failed
 
     - name: Report the rollback
       ansible.builtin.fail:

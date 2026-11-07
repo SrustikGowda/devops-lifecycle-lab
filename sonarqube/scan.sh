@@ -7,12 +7,12 @@ set -euo pipefail
 : "${SONAR_TOKEN:?Set SONAR_TOKEN first: export SONAR_TOKEN=\$(bash sonarqube/setup.sh)}"
 [ -f coverage.xml ] || { echo "coverage.xml not found: run pytest first" >&2; exit 1; }
 
-if [ "$(uname -s)" = "Linux" ]; then
-  # On a Linux CI runner, SonarQube is a service on localhost; share the host network.
-  NET=(--network host); HOST="${SONAR_HOST_URL:-http://localhost:9000}"
-else
-  # Docker Desktop (macOS/Windows): the container reaches your laptop at host.docker.internal.
+if docker info --format '{{.OperatingSystem}}' 2>/dev/null | grep -q "Docker Desktop"; then
+  # Docker Desktop (macOS, Windows, or Linux): containers reach your machine at host.docker.internal.
   NET=(); HOST="${SONAR_HOST_URL:-http://host.docker.internal:9000}"
+else
+  # Docker Engine on Linux (like a CI runner): SonarQube is on localhost, so share the host's network.
+  NET=(--network host); HOST="${SONAR_HOST_URL:-http://localhost:9000}"
 fi
 
 # ${NET[@]+...}: an empty array is fine even with `set -u` on macOS's older bash.

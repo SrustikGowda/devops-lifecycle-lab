@@ -20,7 +20,7 @@ container. If the new version does not answer on `/health` within about 30 secon
 Needs Docker Desktop running and `brew install lima python@3.12`.
 
 ```bash
-/opt/homebrew/bin/python3.12 -m venv ansible/.venv
+python3.12 -m venv ansible/.venv
 source ansible/.venv/bin/activate
 pip install -r ansible/requirements-deploy.txt
 ansible-galaxy collection install -r ansible/requirements.yml -p ansible/collections

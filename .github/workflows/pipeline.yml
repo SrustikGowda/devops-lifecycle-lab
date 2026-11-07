@@ -1,7 +1,8 @@
 # Pipeline: what happens after a pull request is merged into main.
 #   checks -> image pushed to ghcr.io -> deploy to staging -> (you approve) -> deploy to production
 # The deploy jobs run on YOUR self-hosted runner (label "lab"), because only it can reach your servers.
-# They only ever run for commits on main, which only people with write access can push to.
+# They only run for the main branch, and only after you set the repository variable LAB_DEPLOY to "true"
+# (Settings -> Secrets and variables -> Actions -> Variables), once your runner and environments are ready.
 name: Pipeline
 
 on:
@@ -67,28 +68,36 @@ jobs:
   staging:
     name: Deploy to staging
     needs: release
+    if: github.ref == 'refs/heads/main' && vars.LAB_DEPLOY == 'true'
     runs-on: [self-hosted, lab]
     environment:
       name: staging
       url: http://localhost:8081
+    env:
+      IMAGE: ${{ needs.release.outputs.image }}
+      VERSION: ${{ needs.release.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Deploy with Ansible
-        run: bash runner/deploy.sh staging "${{ needs.release.outputs.image }}" "${{ needs.release.outputs.version }}"
+        run: bash runner/deploy.sh staging "$IMAGE" "$VERSION"
       - name: Smoke test from outside
         run: curl -fsS http://localhost:8081/version
 
   production:
     name: Deploy to production
     needs: [release, staging]
+    if: github.ref == 'refs/heads/main' && vars.LAB_DEPLOY == 'true'
     runs-on: [self-hosted, lab]
     # This environment has "required reviewers": the job waits here until someone presses Approve.
     environment:
       name: production
       url: http://localhost:8082
+    env:
+      IMAGE: ${{ needs.release.outputs.image }}
+      VERSION: ${{ needs.release.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Deploy with Ansible
-        run: bash runner/deploy.sh production "${{ needs.release.outputs.image }}" "${{ needs.release.outputs.version }}"
+        run: bash runner/deploy.sh production "$IMAGE" "$VERSION"
       - name: Smoke test from outside
         run: curl -fsS http://localhost:8082/version

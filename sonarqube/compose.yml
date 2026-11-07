@@ -3,7 +3,7 @@
 # Stop:   docker compose -f sonarqube/compose.yml down        (add -v to delete its data)
 services:
   sonarqube:
-    image: sonarqube:community
+    image: sonarqube:26.11.0.134175-community   # the same version the CI uses
     container_name: lab-sonarqube
     ports:
       - "9000:9000"

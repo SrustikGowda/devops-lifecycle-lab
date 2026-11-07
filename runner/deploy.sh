@@ -16,17 +16,22 @@ fi
 target="$1" image="$2" version="$3"
 case "$target" in staging|production) ;; *) echo "Target must be staging or production" >&2; exit 2 ;; esac
 
-# Find Python 3.12 (the runner service may not have Homebrew on its PATH).
+# Find Python 3.12 or newer (the runner service may not have Homebrew on its PATH).
 PY="${PYTHON:-}"
-for candidate in python3.12 /opt/homebrew/bin/python3.12 /usr/local/bin/python3.12 /usr/bin/python3.12; do
+for candidate in python3.13 python3.12 python3 \
+                 /opt/homebrew/bin/python3.13 /opt/homebrew/bin/python3.12 /usr/local/bin/python3.12; do
   [ -n "$PY" ] && break
-  command -v "$candidate" >/dev/null 2>&1 && PY="$candidate"
+  if command -v "$candidate" >/dev/null 2>&1 &&
+     "$candidate" -c 'import sys; sys.exit(sys.version_info < (3, 12))' 2>/dev/null; then
+    PY="$candidate"
+  fi
 done
-[ -n "$PY" ] || { echo "Python 3.12 not found. macOS: brew install python@3.12" >&2; exit 1; }
+[ -n "$PY" ] || { echo "Python 3.12+ not found. macOS: brew install python@3.12; Ubuntu: apt install python3" >&2; exit 1; }
 
 # One Ansible install per set of requirements, kept between runs.
 VENV="${LAB_ANSIBLE_VENV:-$HOME/.cache/devops-lifecycle-lab/ansible-venv}"
-stamp="$(cat ansible/requirements-deploy.txt ansible/requirements.yml | shasum | cut -c1-12)"
+if command -v sha256sum >/dev/null 2>&1; then hash_cmd=(sha256sum); else hash_cmd=(shasum -a 256); fi
+stamp="$(cat ansible/requirements-deploy.txt ansible/requirements.yml | "${hash_cmd[@]}" | cut -c1-12)"
 if [ ! -f "$VENV/.ready-$stamp" ]; then
   echo "Setting up Ansible in $VENV (first run only)..."
   rm -rf "$VENV"
