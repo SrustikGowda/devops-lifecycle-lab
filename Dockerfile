@@ -13,7 +13,7 @@ ARG GIT_SHA=local
 ARG SOURCE_URL=""
 LABEL org.opencontainers.image.source=$SOURCE_URL
 
-ENV PORT=9090
+ENV PORT=8080
 ENV APP_VERSION=$APP_VERSION \
     GIT_SHA=$GIT_SHA \
     PATH="/opt/venv/bin:$PATH" \
