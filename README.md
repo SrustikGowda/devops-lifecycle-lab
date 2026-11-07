@@ -60,7 +60,8 @@ If something fails, see [docs/troubleshooting.md](docs/troubleshooting.md).
 ```bash
 bash scripts/break-it.sh test       # a bug: the unit tests fail
 bash scripts/break-it.sh coverage   # untested code: tests pass, the quality gate fails
-bash scripts/break-it.sh port       # wrong port: tests pass, the health check fails, the deploy rolls back
+bash scripts/break-it.sh port       # wrong port: tests pass; on GitHub the image smoke test stops it,
+                                    # on the laptop path staging's health check fails and the deploy rolls back
 ```
 
 Undo any of them with `git checkout -- .`

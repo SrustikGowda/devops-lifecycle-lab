@@ -57,7 +57,7 @@ PY
     fi
     grep -q '^ENV PORT=8080$' Dockerfile || { echo "Dockerfile has changed, nothing to break." >&2; exit 1; }
     replace Dockerfile '^ENV PORT=8080$' 'ENV PORT=9090'
-    echo "Changed 'ENV PORT=8080' to 'ENV PORT=9090' in Dockerfile: tests pass and the image builds, but nothing answers on 8080. Undo: git checkout -- ."
+    echo "Changed 'ENV PORT=8080' to 'ENV PORT=9090' in Dockerfile: tests pass, but nothing answers on 8080: the CI smoke test fails, and a deploy rolls back. Undo: git checkout -- ."
     ;;
   *)
     echo "Usage: $0 <test|coverage|port>" >&2

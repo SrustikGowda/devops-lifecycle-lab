@@ -44,6 +44,10 @@ git checkout -- .
 
 Tests pass (11), but the app now listens on 9090 and the health check on 8080 fails. The script stops at staging and production is never touched.
 
+On GitHub the same mistake is stopped one step earlier: the CI job "Docker image builds and starts" runs the image and
+asks `/health` on 8080, so the image is never pushed and nothing is deployed. That is what happened to our release 1.3.0.
+Two layers, each with its own check: that's the point.
+
 Timing: the first deploy to a fresh VM takes about 40 to 50 seconds (it installs Docker). Later ones take 3 to 14 seconds.
 
 ## You should see
