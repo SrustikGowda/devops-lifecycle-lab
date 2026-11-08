@@ -1,0 +1,31 @@
+# Demo: a pod that books more CPU than any node has, so it can never be placed. It stays Pending.
+#   kubectl --context kind-lab -n staging apply -f k8s/demos/greedy-pod.yaml
+#   kubectl --context kind-lab -n staging describe pod greedy      (Events: "Insufficient cpu")
+#   kubectl --context kind-lab -n staging delete pod greedy
+# Labelled app=demo, never app=status-board: the Deployment would otherwise treat it as one of its own.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: greedy
+  labels:
+    app: demo
+spec:
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: status-board
+      # The public 1.4.2 image from the original repo. Any build of the app works here, e.g. your own
+      # ghcr.io/<you>/devops-lifecycle-lab:<commit> or a local status-board:local-<commit> from k8s-up.sh.
+      image: ghcr.io/srustikgowda/devops-lifecycle-lab:7c40760b76a20f2758c226eeb0f4ea6c6da08a4a
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+      resources:
+        requests:
+          cpu: "100"   # 100 whole CPUs: more than any laptop has
+          memory: 96Mi

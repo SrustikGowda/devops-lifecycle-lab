@@ -1,6 +1,7 @@
 # Pipeline: what happens after a pull request is merged into main.
 #   checks -> image pushed to ghcr.io -> deploy to staging -> (you approve) -> deploy to production
-# The deploy jobs run on YOUR self-hosted runner (label "lab"), because only it can reach your servers.
+# The deploy jobs run on YOUR self-hosted runner (label "lab"), because only it can reach your Kubernetes cluster
+# (the kind cluster "lab" on your laptop, k8s/kind-config.yaml).
 # They only run for the main branch, and only after you set the repository variable LAB_DEPLOY to "true"
 # (Settings -> Secrets and variables -> Actions -> Variables), once your runner and environments are ready.
 name: Pipeline
@@ -78,10 +79,13 @@ jobs:
       VERSION: ${{ needs.release.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Deploy with Ansible
-        run: bash runner/deploy.sh staging "$IMAGE" "$VERSION"
-      - name: Smoke test from outside
-        run: curl -fsS http://localhost:8081/version
+      - name: Deploy with kubectl
+        run: bash runner/deploy-k8s.sh staging "$IMAGE" "$VERSION"
+      - name: Smoke test from outside (is the new version answering?)
+        run: |
+          reply="$(curl -fsS http://localhost:8081/version)"
+          echo "$reply"
+          grep -qF "\"version\":\"$VERSION\"" <<<"$reply" || { echo "staging answered, but not with $VERSION" >&2; exit 1; }
 
   production:
     name: Deploy to production
@@ -97,7 +101,10 @@ jobs:
       VERSION: ${{ needs.release.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Deploy with Ansible
-        run: bash runner/deploy.sh production "$IMAGE" "$VERSION"
-      - name: Smoke test from outside
-        run: curl -fsS http://localhost:8082/version
+      - name: Deploy with kubectl
+        run: bash runner/deploy-k8s.sh production "$IMAGE" "$VERSION"
+      - name: Smoke test from outside (is the new version answering?)
+        run: |
+          reply="$(curl -fsS http://localhost:8082/version)"
+          echo "$reply"
+          grep -qF "\"version\":\"$VERSION\"" <<<"$reply" || { echo "production answered, but not with $VERSION" >&2; exit 1; }

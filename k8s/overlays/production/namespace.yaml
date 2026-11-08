@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: production
+  labels:
+    # Refuse any pod that could get root on the node (kind's nodes are containers on your laptop's Docker).
+    pod-security.kubernetes.io/enforce: restricted

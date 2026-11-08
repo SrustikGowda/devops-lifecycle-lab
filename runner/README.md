@@ -1,6 +1,6 @@
 # Attach your laptop as a runner (the Jenkins "agent" idea)
 
-GitHub's own machines run the checks and build the image. They can't reach the servers on your laptop, the same way a
+GitHub's own machines run the checks and build the image. They can't reach the Kubernetes cluster on your laptop, the same way a
 cloud service can't reach a company's private network. So the deploy jobs run on a machine *inside* that network: a
 **self-hosted runner**. In Jenkins words, GitHub is the controller and this runner is an agent (a "node").
 
@@ -27,8 +27,14 @@ Never change a pull-request workflow to `self-hosted` on a public repo.
    ```
 4. Start it: `./run.sh`. Back on the Runners page it shows **Idle**: it's attached and waiting for work.
 
-The runner needs: the Lima servers running (`bash servers/up.sh`), `python3.12` (Homebrew: `brew install python@3.12`),
-and `curl`. `runner/deploy.sh` sets up Ansible for it on the first run.
+The runner needs (episode 5; the deploy jobs run `bash runner/deploy-k8s.sh`):
+- The kind cluster running: `bash scripts/k8s-up.sh`, or `kind create cluster --config k8s/kind-config.yaml`.
+- `kubectl`. The script looks in `PATH`, `/opt/homebrew/bin`, `/usr/local/bin` and `~/.docker/bin`.
+- `~/.kube/config` with the context `kind-lab`. kind writes it. Run the runner as the user who created the cluster.
+- `curl`, for the smoke test after each deploy.
+
+The Lima servers, `python3.12` and Ansible (`runner/deploy.sh`) are only needed for the episode-4 version
+(`git checkout ep4-ansible`).
 
 ## Environments (the approval button)
 

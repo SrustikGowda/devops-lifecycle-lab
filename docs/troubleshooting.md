@@ -113,3 +113,73 @@ networks or a VPN on or off after the servers started, also restart them:
 ```bash
 bash servers/down.sh && bash servers/up.sh
 ```
+
+## Kubernetes (episode 5)
+
+These items are for the Kubernetes version.
+
+### Port 8081 or 8082 is already in use
+
+Episode 4's Lima servers use the same two ports. Stop them, then try again:
+
+```bash
+bash servers/down.sh
+bash scripts/k8s-up.sh
+```
+
+`k8s-up.sh` checks both ports before it creates the cluster and tells you which one is busy. To see what holds a port, use the `lsof` command from "A port is busy" above.
+
+### kubectl talks to the wrong cluster
+
+kubectl sends every command to the current context in `~/.kube/config`. Check it:
+
+```bash
+kubectl config current-context
+```
+
+The scripts in this repo always use `kind-lab`, so they are safe. Your own commands are not, unless you add `--context kind-lab`. The lab cluster's context is created by kind.
+
+### ImagePullBackOff (GitHub path)
+
+The pod could not download the image from ghcr.io. The package must be public, because the cluster does not log in. Make it public as in [04](04-package.md): your profile, Packages, devops-lifecycle-lab, Package settings, Change visibility, Public. Then deploy again. To see the exact error:
+
+```bash
+kubectl --context kind-lab -n staging describe pod <name>
+```
+
+### `kind load` fails with "content digest not found"
+
+Some Docker setups add extra data (provenance) to the images they build, and `kind load` may fail to copy it. Build without it, with `--provenance=false`. `scripts/k8s-up.sh` already does this, so you should only meet this error if you build the image by hand.
+
+### CreateContainerConfigError about runAsNonRoot
+
+The message says the container has `runAsNonRoot` and an image user it cannot verify. The Dockerfile's user is a name (`appuser`). Kubernetes can only check a number. The Deployment sets `runAsUser: 10001` (the user's ID) for this reason. If you removed that line from `k8s/base/deployment.yaml` or from a demo pod, put it back.
+
+### A pod is "forbidden: violates PodSecurity "restricted""
+
+Both namespaces only accept pods that can't get root on the node (the label `pod-security.kubernetes.io/enforce:
+restricted` in `k8s/overlays/*/namespace.yaml`). The Deployment and the two demo pods already follow the rules. If you
+changed a `securityContext` (for example removed `runAsNonRoot`, `allowPrivilegeEscalation: false` or `drop: ["ALL"]`),
+put it back. The error message names the exact rule.
+
+### The cluster stops answering ("TLS handshake timeout")
+
+kind's nodes share Docker with everything else you run. If other containers keep Docker busy, or it runs short of
+memory, the cluster's API can stop answering. Stop the other containers, or give Docker more memory, and wait a minute.
+If it still doesn't answer, make a fresh cluster: `bash scripts/k8s-down.sh && bash scripts/k8s-up.sh`.
+
+### The runner cannot find kubectl (GitHub path)
+
+The runner may start with a short PATH. `runner/deploy-k8s.sh` looks for kubectl in PATH, `/opt/homebrew/bin`, `/usr/local/bin` and `~/.docker/bin`. If yours is somewhere else, set `KUBECTL` to its full path in the environment of the runner. If it says `No kubectl context "kind-lab"`, the cluster does not exist yet: run `bash scripts/k8s-up.sh`, or `kind create cluster --config k8s/kind-config.yaml`.
+
+### The rollout is stuck
+
+The deploy script printed `ROLLOUT STUCK`. The old pods are still serving. Read [10 Diagnose](10-diagnose.md), find the cause, then undo:
+
+```bash
+kubectl --context kind-lab -n staging rollout undo deployment/status-board
+```
+
+### The Service has no endpoints
+
+All pods are `Running`, but the address does not answer. Either no pod is ready, or the Service's `selector` does not match the pods' labels. See "Another case" in [10 Diagnose](10-diagnose.md).

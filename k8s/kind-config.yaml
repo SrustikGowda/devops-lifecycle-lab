@@ -1,0 +1,24 @@
+# A small Kubernetes cluster on your laptop, made by kind: one control plane and two workers.
+# Each "node" is a Docker container. Create it with:  kind create cluster --config k8s/kind-config.yaml
+#
+# The two port mappings make staging and production reachable at the same addresses as episode 4:
+#   http://localhost:8081  ->  staging     (NodePort 30081)
+#   http://localhost:8082  ->  production  (NodePort 30082)
+# listenAddress 127.0.0.1 keeps them on this laptop only. kind's default would open them on every network
+# interface, so anyone on the same Wi-Fi could reach them.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: lab
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30081
+        hostPort: 8081
+        listenAddress: "127.0.0.1"
+        protocol: TCP
+      - containerPort: 30082
+        hostPort: 8082
+        listenAddress: "127.0.0.1"
+        protocol: TCP
+  - role: worker
+  - role: worker

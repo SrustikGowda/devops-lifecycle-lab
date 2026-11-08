@@ -1,0 +1,18 @@
+# The Service: one address that never changes, in front of whichever pods are ready right now.
+apiVersion: v1
+kind: Service
+metadata:
+  name: status-board
+  labels:
+    app: status-board
+spec:
+  # NodePort: reachable on a fixed port of every node. kind maps it to your laptop (k8s/kind-config.yaml).
+  type: NodePort
+  # Send traffic to ready pods with this label. A typo here and the Service finds no pods at all.
+  selector:
+    app: status-board
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      # Each environment sets its own nodePort (k8s/overlays/*/kustomization.yaml).

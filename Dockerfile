@@ -30,4 +30,8 @@ HEALTHCHECK --interval=5s --timeout=3s --start-period=5s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:${PORT}/health', timeout=2)"
 
 # "sh -c" so ${PORT} is expanded; "exec" so gunicorn becomes PID 1 and gets stop signals.
-CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:${PORT} --workers 2 --access-logfile - 'app:create_app()'"]
+# --threads 4: each worker answers 4 requests at once, so /health still answers while the page waits on the three
+# websites (up to 2 s each). Kubernetes asks /health every few seconds and gives up after 1 s.
+# --no-control-socket: we don't use gunicorn's control tool, and appuser has no home folder to put its socket in
+# (without this flag, every start logs a confusing "Permission denied: '/home/appuser'").
+CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:${PORT} --workers 2 --threads 4 --no-control-socket --access-logfile - 'app:create_app()'"]

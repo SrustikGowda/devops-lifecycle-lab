@@ -1,6 +1,7 @@
 """Status Board: a tiny Flask app that checks three websites and shows their state."""
 
 import os
+import socket
 
 from flask import Flask, Response, jsonify, render_template
 
@@ -8,10 +9,14 @@ from app.board import check_all
 
 
 def version_info():
-    """Read the running version and commit from the environment (set at image build time)."""
+    """The running version and commit (set at image build time), and which copy of the app answered.
+
+    In Kubernetes the hostname is the pod's name; in plain Docker it is the container ID.
+    """
     return {
         "version": os.environ.get("APP_VERSION") or "dev",
         "commit": os.environ.get("GIT_SHA") or "local",
+        "pod": socket.gethostname(),
     }
 
 
@@ -26,6 +31,7 @@ def create_app():
             sites=check_all(),
             version=info["version"],
             commit=info["commit"][:7],
+            pod=info["pod"],
         )
 
     @app.get("/health")

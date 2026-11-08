@@ -4,14 +4,14 @@ This page is only for path B (the GitHub path). Path A does not need it.
 
 ## Why
 
-GitHub's machines run the tests and build the image. They cannot reach the VMs on your laptop, just as a cloud service cannot reach a company's private network. So the deploy jobs run on a **self-hosted runner**: a small program on your laptop that asks GitHub for work.
+GitHub's machines run the tests and build the image. They cannot reach the Kubernetes cluster on your laptop, just as a cloud service cannot reach a company's private network. So the deploy jobs run on a **self-hosted runner**: a small program on your laptop that asks GitHub for work.
 
 | | GitHub-hosted | Self-hosted |
 |---|---|---|
 | Where | GitHub's cloud | Your laptop |
 | Label in the workflow | `runs-on: ubuntu-latest` | `runs-on: [self-hosted, lab]` |
 | Used by | `ci.yml`, job `release` | jobs `staging`, `production` |
-| Can reach your VMs | No | Yes |
+| Can reach your cluster | No | Yes |
 
 ## The security rule
 
@@ -37,7 +37,16 @@ The full version is in [runner/README.md](../runner/README.md). In short:
    ./run.sh
    ```
 
-The laptop also needs the VMs running (`bash servers/up.sh`), `python3.12`, and `curl`. `runner/deploy.sh` sets up Ansible by itself on the first run.
+## What the runner needs (episode 5)
+
+The deploy jobs now run `bash runner/deploy-k8s.sh`. The laptop needs:
+
+- The kind cluster running. Create it with `bash scripts/k8s-up.sh` or `kind create cluster --config k8s/kind-config.yaml` ([09](09-kubernetes.md)).
+- `kubectl` ([09](09-kubernetes.md), "What you need"). The script looks for it in `PATH`, `/opt/homebrew/bin`, `/usr/local/bin` and `~/.docker/bin`.
+- `~/.kube/config` with the context `kind-lab`. kind writes it when it creates the cluster. The runner must run as the same user that created the cluster.
+- `curl`, for the smoke test after each deploy.
+
+The Lima servers, `python3.12` and Ansible are only needed for the episode-4 version (`git checkout ep4-ansible`). They are not needed now.
 
 ## Environments
 
@@ -54,4 +63,4 @@ The laptop also needs the VMs running (`bash servers/up.sh`), `python3.12`, and 
 
 ## You should see
 
-On **Settings, Actions, Runners**, your runner `my-laptop` with the label `lab` and the status **Idle**. In the terminal where `./run.sh` is running, a line saying it is listening for jobs (the exact wording comes from GitHub's runner and may change).
+Before the first deploy, `kubectl --context kind-lab get nodes` lists three nodes. On **Settings, Actions, Runners**, your runner `my-laptop` with the label `lab` and the status **Idle**. In the terminal where `./run.sh` is running, a line saying it is listening for jobs (the exact wording comes from GitHub's runner and may change).

@@ -1,0 +1,7 @@
+# What every environment has in common. The overlays in k8s/overlays/ add what differs.
+# No commonLabels here: it would rewrite the Deployment's selector, which can't change after creation.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - deployment.yaml
+  - service.yaml

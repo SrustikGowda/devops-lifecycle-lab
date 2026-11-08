@@ -11,6 +11,7 @@
              flex-wrap: wrap; gap: 16px; border-bottom: 4px solid #fff; padding-bottom: 24px; }
     h1 { margin: 0; font-size: 72px; }
     .version { font-family: ui-monospace, monospace; font-size: 40px; }
+    footer { margin-top: 32px; color: #aaa; font-family: ui-monospace, monospace; font-size: 28px; }
     table { width: 100%; border-collapse: collapse; margin-top: 32px; }
     th { text-align: left; font-size: 24px; color: #aaa; text-transform: uppercase;
          letter-spacing: 2px; padding-bottom: 8px; }
@@ -41,5 +42,6 @@
     </tr>
     {% endfor %}
   </table>
+  <footer>served by {{ pod }}</footer>
 </body>
 </html>

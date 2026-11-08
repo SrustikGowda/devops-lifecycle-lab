@@ -29,10 +29,22 @@ def test_health_says_ok_without_the_network(client):
 def test_version_reads_the_environment(client, monkeypatch):
     monkeypatch.setenv("APP_VERSION", "1.2.3")
     monkeypatch.setenv("GIT_SHA", "abcdef1234567890")
-    assert client.get("/version").get_json() == {"version": "1.2.3", "commit": "abcdef1234567890"}
+    monkeypatch.setattr("app.socket.gethostname", lambda: "status-board-7d9f-x2k4q")
+    assert client.get("/version").get_json() == {
+        "version": "1.2.3",
+        "commit": "abcdef1234567890",
+        "pod": "status-board-7d9f-x2k4q",
+    }
 
 
 def test_version_has_defaults_when_the_environment_is_empty(client, monkeypatch):
     monkeypatch.delenv("APP_VERSION", raising=False)
     monkeypatch.delenv("GIT_SHA", raising=False)
-    assert client.get("/version").get_json() == {"version": "dev", "commit": "local"}
+    reply = client.get("/version").get_json()
+    assert (reply["version"], reply["commit"]) == ("dev", "local")
+    assert reply["pod"]
+
+
+def test_page_footer_shows_which_pod_answered(client, network_up, monkeypatch):
+    monkeypatch.setattr("app.socket.gethostname", lambda: "status-board-7d9f-x2k4q")
+    assert "served by status-board-7d9f-x2k4q" in client.get("/").get_data(as_text=True)

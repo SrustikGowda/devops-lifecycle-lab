@@ -1,0 +1,101 @@
+# The Deployment: "keep three copies of the Status Board running, exactly like this".
+# You never start or stop pods by hand. You change this file, and Kubernetes makes the cluster match it.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: status-board
+  labels:
+    app: status-board
+spec:
+  # Desired state: three pods. Delete one and Kubernetes starts another.
+  replicas: 3
+  # Old versions kept for `kubectl rollout undo`.
+  revisionHistoryLimit: 5
+  # A new version gets 90 seconds to become ready. After that the rollout is marked stuck (the default is 600 s).
+  # Kubernetes does not undo it for you: the old pods keep serving until a person decides.
+  progressDeadlineSeconds: 90
+  # Which pods belong to this Deployment. This can't be changed after the Deployment is created.
+  selector:
+    matchLabels:
+      app: status-board
+  # Rolling update: start one new pod, wait until it is ready, then stop one old pod. Repeat.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # at most one extra pod during an update
+      maxUnavailable: 0  # never fewer ready pods than `replicas`
+  template:
+    metadata:
+      labels:
+        app: status-board
+    spec:
+      # A pod that is being stopped gets this long to finish (the preStop wait below counts towards it).
+      terminationGracePeriodSeconds: 15
+      # The app never talks to the Kubernetes API, so it gets no API key.
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        # The Dockerfile's user "appuser" has this ID. Kubernetes can only check a number, not a name:
+        # without it, runAsNonRoot stops the pod with CreateContainerConfigError.
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      # Spread the pods over the worker nodes instead of piling them on one.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: status-board
+      containers:
+        - name: status-board
+          # A placeholder. runner/deploy-k8s.sh puts the image named after the commit here at deploy time.
+          image: status-board:dev
+          # Images are named after commits and never change, so a node never needs to download one twice.
+          imagePullPolicy: IfNotPresent
+          env:
+            # The app listens on this port. It must match containerPort below and the probes.
+            - name: PORT
+              value: "8080"
+          ports:
+            - name: http
+              containerPort: 8080
+          # Readiness: "are you ready to take requests?" Until it answers, the Service sends this pod nothing.
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 2
+            timeoutSeconds: 1
+            failureThreshold: 3
+          # Liveness: "are you even awake?" Three missed answers in a row and the container is restarted.
+          # It only asks about the app itself, never about other services: a slow dependency must not restart it.
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 1
+            failureThreshold: 3
+          # Before the container is stopped, wait 5 s: the Service stops sending it new requests during that time,
+          # so requests already on their way still get an answer.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "5"]
+          # Measured: about 74 MiB in use when idle (gunicorn plus two workers).
+          # requests = what the scheduler books on a node; limits = the most the container may use.
+          # Over the CPU limit the app is slowed down; over the memory limit it is killed (OOMKilled).
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 250m
+              memory: 192Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]

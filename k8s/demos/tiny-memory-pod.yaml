@@ -1,0 +1,36 @@
+# Demo: the app with a memory limit far below what it needs (it uses about 74 MiB). It is killed
+# for using too much memory (OOMKilled, exit code 137), restarted, killed again: CrashLoopBackOff.
+#   kubectl --context kind-lab -n staging apply -f k8s/demos/tiny-memory-pod.yaml
+#   kubectl --context kind-lab -n staging get pod tiny-memory -w
+#   kubectl --context kind-lab -n staging describe pod tiny-memory    (Last State: Terminated, Reason: OOMKilled)
+#   kubectl --context kind-lab -n staging delete pod tiny-memory
+# Labelled app=demo, never app=status-board: the Deployment would otherwise treat it as one of its own.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: tiny-memory
+  labels:
+    app: demo
+spec:
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: status-board
+      # The public 1.4.2 image from the original repo. Any build of the app works here, e.g. your own
+      # ghcr.io/<you>/devops-lifecycle-lab:<commit> or a local status-board:local-<commit> from k8s-up.sh.
+      image: ghcr.io/srustikgowda/devops-lifecycle-lab:7c40760b76a20f2758c226eeb0f4ea6c6da08a4a
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+      resources:
+        requests:
+          cpu: 50m
+          memory: 32Mi
+        limits:
+          cpu: 250m
+          memory: 32Mi
