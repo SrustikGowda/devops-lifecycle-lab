@@ -257,7 +257,7 @@ status-board-fd94fd459-nxktm    1/1     Running       0          5s
 status-board-fd94fd459-zlgqm    1/1     Running       0          8s
 ```
 
-In our run the update took about 11 seconds, and the traffic script counted 1,468 requests with 0 failed.
+In our run the update took about 11 seconds, and the traffic script, which ran for about five minutes around it (1,468 requests), counted 0 failed.
 
 ### What if the new version never becomes ready?
 
