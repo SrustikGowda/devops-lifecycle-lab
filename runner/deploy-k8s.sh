@@ -56,7 +56,10 @@ grep -q "image: $image" <<<"$rendered" || { echo "Could not put $image into the 
 # Write the version next to this revision, so `kubectl rollout history` shows 1.5.0, 1.5.1 ... instead of numbers only.
 k annotate deployment/status-board --overwrite kubernetes.io/change-cause="$version ($short)" >/dev/null
 
-if k rollout status deployment/status-board --timeout="$TIMEOUT"; then
+# Keep a copy of the rollout's messages: if it fails, the last line says why ("exceeded its progress deadline").
+rollout_log="$(mktemp)"
+trap 'rm -f "$rollout_log"' EXIT
+if k rollout status deployment/status-board --timeout="$TIMEOUT" 2>&1 | tee "$rollout_log"; then
   k get pods -l app=status-board -o wide
   echo "DEPLOYED $version to $target"
   exit 0
@@ -65,9 +68,14 @@ fi
 echo
 ready="$(k get deployment/status-board -o jsonpath='{.status.readyReplicas}' 2>/dev/null || true)"
 if [ -n "$ready" ] && [ "$ready" != 0 ]; then
-  echo "ROLLOUT STUCK: $version never became ready on $target. $ready pods of the previous version are still serving users."
+  why="$version never became ready on $target. $ready pods of the previous version are still serving users."
 else
-  echo "ROLLOUT STUCK: $version never became ready on $target, and no ready pods are serving users."
+  why="$version never became ready on $target, and no ready pods are serving users."
+fi
+echo "ROLLOUT STUCK: $why"
+# On GitHub, put the reason on the run's page too: job logs need a sign-in to read, annotations don't.
+if [ "${GITHUB_ACTIONS:-}" = true ]; then
+  echo "::error title=Rollout stuck on $target::$(tail -n 1 "$rollout_log") $why"
 fi
 k get pods -l app=status-board -o wide || true
 # A pod that is not ready: that's the one to look at.
